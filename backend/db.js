@@ -1,25 +1,24 @@
 // db.js
 const mysql = require("mysql2");
 
-// Tạo kết nối tới MySQL (Aiven/Render)
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_PORT:", process.env.DB_PORT);
-console.log("DB_NAME:", process.env.DB_NAME);
+const host = (process.env.DB_HOST || "").trim();
+const port = Number((process.env.DB_PORT || "3306").trim());
+const user = (process.env.DB_USER || "").trim();
+const database = (process.env.DB_NAME || "").trim();
+
+console.log("DB_HOST:", JSON.stringify(host));
+console.log("DB_PORT:", JSON.stringify(port));
+console.log("DB_NAME:", JSON.stringify(database));
 
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
+  host,
+  port,
+  user,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-
-  // Aiven yêu cầu SSL
-  ssl: {
-    rejectUnauthorized: true
-  }
+  database,
+  ssl: { rejectUnauthorized: true }
 });
 
-// Kiểm tra kết nối
 db.connect((err) => {
   if (err) {
     console.error("Kết nối MySQL thất bại:", err);
