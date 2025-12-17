@@ -1,21 +1,27 @@
 // db.js
-const mysql = require('mysql2');
+const mysql = require("mysql2");
 
-// Tạo kết nối tới MySQL
+// Tạo kết nối tới MySQL (Aiven/Render)
 const db = mysql.createConnection({
-  host: 'localhost',     // hoặc IP của server MySQL
-  user: 'root',          // user MySQL
-  password: '',          // mật khẩu MySQL
-  database: 'db_thuexe'  // tên database bạn đã tạo
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+
+  // Aiven yêu cầu SSL
+  ssl: {
+    rejectUnauthorized: true
+  }
 });
 
 // Kiểm tra kết nối
-db.connect(err => {
+db.connect((err) => {
   if (err) {
-    console.error('Kết nối MySQL thất bại: ', err);
+    console.error("Kết nối MySQL thất bại:", err);
     return;
   }
-  console.log('Kết nối MySQL thành công!');
+  console.log("Kết nối MySQL thành công!");
 });
 
 module.exports = db;
