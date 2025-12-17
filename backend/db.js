@@ -2,6 +2,10 @@
 const mysql = require("mysql2");
 
 // Tạo kết nối tới MySQL (Aiven/Render)
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_PORT:", process.env.DB_PORT);
+console.log("DB_NAME:", process.env.DB_NAME);
+
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 3306),
