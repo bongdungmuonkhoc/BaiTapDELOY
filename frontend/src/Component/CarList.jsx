@@ -1,51 +1,65 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import SearchBar from './SearchBar';
-
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import SearchBar from "./SearchBar";
 
 function CarList() {
-  
+  const API_URL = import.meta.env.VITE_API_URL; // ✅ dùng cho production
+
   const [cars, setCars] = useState([]);
   const [filteredCars, setFilteredCars] = useState([]);
-  const [hopDongMoi, setHopDongMoi] = useState(null); 
+  const [hopDongMoi, setHopDongMoi] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
   const location = useLocation();
+
   const [formData, setFormData] = useState({
-    tenKhach: '',
-    sdt: '',
-    ngayThue: '',
-    ngayTra: ''
+    tenKhach: "",
+    sdt: "",
+    ngayThue: "",
+    ngayTra: "",
   });
 
+  const fetchCars = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/xe`);
+      const data = await res.json();
+      setCars(data);
+      setFilteredCars(data);
+    } catch (err) {
+      console.error("Lỗi fetch:", err);
+    }
+  };
+
   useEffect(() => {
-    fetch('http://localhost:5000/api/xe')
-      .then(res => res.json())
-      .then(data => {
-        setCars(data);
-        setFilteredCars(data);
-      })
-      .catch(err => console.error('Lỗi fetch:', err));
+    fetchCars();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-    useEffect(() => {
+
+  useEffect(() => {
     if (location.state?.maXe) {
-      const xe = cars.find(c => c.Ma_Xe === location.state.maXe);
+      const xe = cars.find((c) => c.Ma_Xe === location.state.maXe);
       if (xe) handleOpenForm(xe);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cars]);
-    const handleSearch = (keyword) => {
-    fetch(`http://localhost:5000/api/xe?search=${keyword}`)
-      .then(res => res.json())
-      .then(data => setFilteredCars(data))
-      .catch(err => console.error("Lỗi tìm kiếm:", err));
+
+  const handleSearch = async (keyword) => {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/xe?search=${encodeURIComponent(keyword)}`
+      );
+      const data = await res.json();
+      setFilteredCars(data);
+    } catch (err) {
+      console.error("Lỗi tìm kiếm:", err);
+    }
   };
 
   const handleFilter = (loai) => {
-    if (loai === 'all') {
+    if (loai === "all") {
       setFilteredCars(cars);
     } else {
-      const filtered = cars.filter(car => car.Loai === loai);
+      const filtered = cars.filter((car) => car.Loai === loai);
       setFilteredCars(filtered);
     }
   };
@@ -55,102 +69,89 @@ function CarList() {
     setShowForm(true);
   };
 
-const handleSubmit = () => {
-  // Kiểm tra dữ liệu đầu vào
-  const { tenKhach, sdt, ngayThue, ngayTra } = formData;
+  const handleSubmit = async () => {
+    const { tenKhach, sdt, ngayThue, ngayTra } = formData;
 
-  if (!tenKhach || !sdt || !ngayThue || !ngayTra) {
-    alert('Vui lòng nhập đầy đủ thông tin thuê xe.');
-    return;
-  }
+    if (!tenKhach || !sdt || !ngayThue || !ngayTra) {
+      alert("Vui lòng nhập đầy đủ thông tin thuê xe.");
+      return;
+    }
 
-  const start = new Date(ngayThue);
-  const end = new Date(ngayTra);
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const soNgay = Math.ceil((end - start) / msPerDay);
+    const start = new Date(ngayThue);
+    const end = new Date(ngayTra);
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const soNgay = Math.ceil((end - start) / msPerDay);
 
-  if (soNgay <= 0) {
-    alert('Ngày trả phải sau ngày thuê.');
-    return;
-  }
+    if (soNgay <= 0) {
+      alert("Ngày trả phải sau ngày thuê.");
+      return;
+    }
 
-  const giaThue = selectedCar.Gia_Thue_Ngay;
-  const tongTien = soNgay * giaThue;
+    const giaThue = selectedCar.Gia_Thue_Ngay;
+    const tongTien = soNgay * giaThue;
 
-  const hopDong = {
-    Ten_Khach: tenKhach.trim(),
-    SDT: sdt.trim(),
-    Ma_Xe: selectedCar.Ma_Xe,
-    Ngay_Thue: ngayThue,
-    Ngay_Tra: ngayTra,
-    TongTien: tongTien
-  };
+    const hopDong = {
+      Ten_Khach: tenKhach.trim(),
+      SDT: sdt.trim(),
+      Ma_Xe: selectedCar.Ma_Xe,
+      Ngay_Thue: ngayThue,
+      Ngay_Tra: ngayTra,
+      TongTien: tongTien,
+    };
 
-  fetch('http://localhost:5000/api/hopdong', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(hopDong)
-  })
-    .then(res => res.json())
-    .then(data => {
-      console.log('Hợp đồng mới:', data);
+    try {
+      const res = await fetch(`${API_URL}/api/hopdong`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hopDong),
+      });
 
-      if (data.error || (data.message && data.message.includes('Không tìm thấy khách hàng'))) {
-        alert(data.message || 'Thuê xe thất bại!');
+      const data = await res.json();
+
+      if (data.error || (data.message && data.message.includes("Không tìm thấy khách hàng"))) {
+        alert(data.message || "Thuê xe thất bại!");
         return;
       }
 
-      localStorage.setItem('maKH', data.Ma_KH);
+      localStorage.setItem("maKH", data.Ma_KH);
       setHopDongMoi(data);
       setShowForm(false);
-      setFormData({ tenKhach: '', sdt: '', ngayThue: '', ngayTra: '' });
+      setFormData({ tenKhach: "", sdt: "", ngayThue: "", ngayTra: "" });
 
-      fetch('http://localhost:5000/api/xe')
-        .then(res => res.json())
-        .then(data => {
-          setCars(data);
-          setFilteredCars(data);
-        });
-    })
-    .catch(err => {
-      console.error('Lỗi tạo hợp đồng:', err);
-      alert('Thuê xe thất bại!');
-    });
-};
+      await fetchCars();
+    } catch (err) {
+      console.error("Lỗi tạo hợp đồng:", err);
+      alert("Thuê xe thất bại!");
+    }
+  };
 
- const traXe = (maHD_raw) => {
-  if (!maHD_raw || isNaN(maHD_raw)) {
-    alert('Mã hợp đồng không hợp lệ.');
-    return;
-  }
+  const traXe = async (maHD_raw) => {
+    if (!maHD_raw || isNaN(maHD_raw)) {
+      alert("Mã hợp đồng không hợp lệ.");
+      return;
+    }
 
-  fetch(`http://localhost:5000/api/hopdong/${maHD_raw}/tra`, {
-    method: 'PUT'
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error || data.message?.includes('không tìm thấy')) {
-        alert(data.message || 'Trả xe thất bại!');
+    try {
+      const res = await fetch(`${API_URL}/api/hopdong/${maHD_raw}/tra`, {
+        method: "PUT",
+      });
+
+      const data = await res.json();
+
+      if (data.error || data.message?.includes("không tìm thấy")) {
+        alert(data.message || "Trả xe thất bại!");
         return;
       }
 
       alert(data.message);
       setHopDongMoi(null);
 
-  fetch(`${import.meta.env.VITE_API_URL}/api/xe`)
-
-        .then(res => res.json())
-        .then(data => {
-          setCars(data);
-          setFilteredCars(data);
-        })
-        .catch(err => console.error('Lỗi refetch xe:', err));
-    })
-    .catch(err => {
-      console.error('Lỗi trả xe:', err);
-      alert('Trả xe thất bại!');
-    });
-};
+      await fetchCars();
+    } catch (err) {
+      console.error("Lỗi trả xe:", err);
+      alert("Trả xe thất bại!");
+    }
+  };
 
   return (
     
