@@ -137,7 +137,8 @@ const handleSubmit = () => {
       alert(data.message);
       setHopDongMoi(null);
 
-      fetch('http://localhost:5000/api/xe')
+  fetch(`${import.meta.env.VITE_API_URL}/api/xe`)
+
         .then(res => res.json())
         .then(data => {
           setCars(data);
