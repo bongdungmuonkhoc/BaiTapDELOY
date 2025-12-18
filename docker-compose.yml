@@ -1,0 +1,8 @@
+services:
+  frontend:
+    build: ./frontend
+    container_name: app-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "https://baitap-backend.onrender.com"
